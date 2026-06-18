@@ -67,7 +67,7 @@ def predict():
         # Realizar la predicción
         prediccion = modelo.predict(datos_finales)
 
-        peso_estimado = round(float(prediccion[0]), 2)
+        peso_estimado = round(max(0.0, float(prediccion[0])), 2)
 
         return jsonify({
             "peso": peso_estimado
