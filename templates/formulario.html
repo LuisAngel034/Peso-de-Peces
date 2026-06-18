@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Predicción del peso de peces</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e8f4f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .contenedor {
+            width: 400px;
+            margin: 60px auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            text-align: center;
+            color: #0b5c75;
+        }
+
+        p {
+            text-align: center;
+            color: #555;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            box-sizing: border-box;
+            border: 1px solid #aaa;
+            border-radius: 5px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            background-color: #0b5c75;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #083f51;
+        }
+
+        #resultado {
+            margin-top: 20px;
+            padding: 15px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: #0b5c75;
+        }
+    </style>
+
+    <script>
+        function predecirPeso(event) {
+            event.preventDefault();
+
+            const length1 = document.getElementById("length1").value;
+            const length2 = document.getElementById("length2").value;
+            const length3 = document.getElementById("length3").value;
+
+            const datos = new URLSearchParams();
+
+            datos.append("length1", length1);
+            datos.append("length2", length2);
+            datos.append("length3", length3);
+
+            document.getElementById("resultado").innerText =
+                "Calculando peso...";
+
+            fetch("/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded"
+                },
+                body: datos
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("resultado").innerText =
+                        "Error: " + data.error;
+                } else {
+                    document.getElementById("resultado").innerText =
+                        "Peso estimado: " + data.peso + " gramos";
+                }
+            })
+            .catch(error => {
+                document.getElementById("resultado").innerText =
+                    "Ocurrió un error al realizar la predicción.";
+
+                console.error(error);
+            });
+        }
+    </script>
+</head>
+
+<body>
+
+    <div class="contenedor">
+
+        <h1>Predicción del peso de peces</h1>
+
+        <p>
+            Introduce las tres medidas de longitud del pez.
+        </p>
+
+        <form onsubmit="predecirPeso(event)">
+
+            <label for="length1">
+                Longitud vertical — Length1:
+            </label>
+
+            <input
+                type="number"
+                id="length1"
+                name="length1"
+                min="0.1"
+                step="0.1"
+                placeholder="Ejemplo: 23.2"
+                required
+            >
+
+            <label for="length2">
+                Longitud diagonal — Length2:
+            </label>
+
+            <input
+                type="number"
+                id="length2"
+                name="length2"
+                min="0.1"
+                step="0.1"
+                placeholder="Ejemplo: 25.4"
+                required
+            >
+
+            <label for="length3">
+                Longitud transversal — Length3:
+            </label>
+
+            <input
+                type="number"
+                id="length3"
+                name="length3"
+                min="0.1"
+                step="0.1"
+                placeholder="Ejemplo: 30.0"
+                required
+            >
+
+            <button type="submit">
+                Predecir peso
+            </button>
+
+        </form>
+
+        <div id="resultado"></div>
+
+    </div>
+
+</body>
+</html>
