@@ -4,15 +4,10 @@ import joblib
 import pandas as pd
 from flask import Flask, jsonify, render_template, request
 
-
 app = Flask(__name__)
 
-
-# Carpeta donde se encuentra app.py
 BASE_DIR = Path(__file__).resolve().parent
 
-
-# Cargar el modelo exportado desde la libreta
 ruta_modelo = BASE_DIR / "modelo_peso_peces.pkl"
 
 paquete_modelo = joblib.load(
@@ -24,7 +19,6 @@ modelo = paquete_modelo["modelo"]
 caracteristicas = paquete_modelo[
     "caracteristicas"
 ]
-
 
 @app.route("/")
 def inicio():
@@ -54,8 +48,6 @@ def predict():
                     "mayores que cero."
             }), 400
 
-        # Crear los datos en el mismo formato
-        # utilizado durante el entrenamiento
         datos = pd.DataFrame([
             {
                 "Width": width,
@@ -63,8 +55,6 @@ def predict():
             }
         ])
 
-        # Mantener exactamente el mismo orden
-        # de las características del modelo
         datos_finales = datos[
             caracteristicas
         ]
