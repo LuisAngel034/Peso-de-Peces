@@ -1,96 +1,120 @@
-from flask import Flask, jsonify, render_template, request
+from pathlib import Path
+
 import joblib
-import os
 import pandas as pd
+from flask import Flask, jsonify, render_template, request
+
 
 app = Flask(__name__)
 
+
+# Carpeta donde se encuentra app.py
+BASE_DIR = Path(__file__).resolve().parent
+
+
 # Cargar el modelo exportado desde la libreta
-ruta_modelo = os.path.join(
-    os.path.dirname(__file__),
-    "modelo_peso_peces.pkl"
+ruta_modelo = BASE_DIR / "modelo_peso_peces.pkl"
+
+paquete_modelo = joblib.load(
+    ruta_modelo
 )
 
-paquete_modelo = joblib.load(ruta_modelo)
-
 modelo = paquete_modelo["modelo"]
-escalador = paquete_modelo["escalador"]
-columnas_numericas = paquete_modelo["columnas_numericas"]
-columnas_dummy = paquete_modelo["columnas_dummy"]
-caracteristicas = paquete_modelo["caracteristicas"]
+
+caracteristicas = paquete_modelo[
+    "caracteristicas"
+]
 
 
 @app.route("/")
 def inicio():
-    return render_template("formulario.html")
+    return render_template(
+        "formulario.html"
+    )
 
 
-@app.route("/predict", methods=["POST"])
+@app.route(
+    "/predict",
+    methods=["POST"]
+)
 def predict():
     try:
-        length3 = float(request.form["length3"])
-        width = float(request.form["width"])
-        species = request.form["species"]
+        length3 = float(
+            request.form.get("length3", "")
+        )
+
+        width = float(
+            request.form.get("width", "")
+        )
 
         if length3 <= 0 or width <= 0:
             return jsonify({
-                "error": "Las medidas deben ser mayores que cero."
+                "error":
+                    "Las medidas deben ser "
+                    "mayores que cero."
             }), 400
 
-        # Crear las columnas numéricas en el mismo orden del entrenamiento
-        datos_numericos = pd.DataFrame(
-            [[0.0] * len(columnas_numericas)],
-            columns=columnas_numericas
+        # Crear los datos en el mismo formato
+        # utilizado durante el entrenamiento
+        datos = pd.DataFrame([
+            {
+                "Width": width,
+                "Length3": length3
+            }
+        ])
+
+        # Mantener exactamente el mismo orden
+        # de las características del modelo
+        datos_finales = datos[
+            caracteristicas
+        ]
+
+        prediccion = modelo.predict(
+            datos_finales
         )
-
-        datos_numericos.loc[0, "Length3"] = length3
-        datos_numericos.loc[0, "Width"] = width
-
-        # Aplicar el mismo escalado utilizado en la libreta
-        datos_escalados = pd.DataFrame(
-            escalador.transform(datos_numericos),
-            columns=columnas_numericas
-        )
-
-        # Crear las columnas de especie
-        datos_especies = pd.DataFrame(
-            [[0] * len(columnas_dummy)],
-            columns=columnas_dummy
-        )
-
-        columna_especie = f"Species_{species}"
-
-        if columna_especie in datos_especies.columns:
-            datos_especies.loc[0, columna_especie] = 1
-
-        # Unir datos numéricos y especie
-        datos_completos = pd.concat(
-            [datos_escalados, datos_especies],
-            axis=1
-        )
-
-        # Usar únicamente las características del modelo final
-        datos_finales = datos_completos[caracteristicas]
-
-        prediccion = modelo.predict(datos_finales)
 
         peso_estimado = round(
-            max(0.0, float(prediccion[0])),
+            max(
+                0.0,
+                float(prediccion[0])
+            ),
             2
         )
 
-        return jsonify({"peso": peso_estimado})
+        return jsonify({
+            "peso": peso_estimado
+        })
 
     except ValueError:
         return jsonify({
-            "error": "Introduce valores numéricos válidos."
+            "error":
+                "Introduce valores numéricos "
+                "válidos."
         }), 400
 
-    except Exception as error:
-        print("Error:", error)
+    except KeyError as error:
+        print(
+            "Falta una característica:",
+            error
+        )
+
         return jsonify({
-            "error": "No fue posible realizar la predicción."
-        }), 400
+            "error":
+                "El modelo no tiene la estructura "
+                "esperada."
+        }), 500
+
+    except Exception as error:
+        print(
+            "Error al predecir:",
+            error
+        )
+
+        return jsonify({
+            "error":
+                "No fue posible realizar "
+                "la predicción."
+        }), 500
 
 
 if __name__ == "__main__":

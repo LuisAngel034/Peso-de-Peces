@@ -2,7 +2,12 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
     <title>Predicción del peso de peces</title>
 
     <style>
@@ -10,18 +15,23 @@
             font-family: Arial, sans-serif;
             background-color: #e8f4f8;
             margin: 0;
+            padding: 20px;
         }
 
         .contenedor {
-            width: 380px;
-            margin: 60px auto;
+            width: 100%;
+            max-width: 380px;
+            margin: 40px auto;
             background-color: white;
             padding: 28px;
+            box-sizing: border-box;
             border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow:
+                0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         h1 {
+            margin-top: 0;
             text-align: center;
             color: #0b5c75;
         }
@@ -37,14 +47,14 @@
             font-weight: bold;
         }
 
-        input,
-        select {
+        input {
             width: 100%;
             padding: 10px;
             margin-top: 5px;
             box-sizing: border-box;
             border: 1px solid #aaa;
             border-radius: 5px;
+            font-size: 16px;
         }
 
         button {
@@ -63,6 +73,11 @@
             background-color: #083f51;
         }
 
+        button:disabled {
+            background-color: #777;
+            cursor: not-allowed;
+        }
+
         #resultado {
             margin-top: 20px;
             text-align: center;
@@ -70,27 +85,43 @@
             font-weight: bold;
             color: #0b5c75;
         }
+
+        .error {
+            color: #a40000 !important;
+        }
     </style>
 </head>
 
 <body>
+
     <div class="contenedor">
+
         <h1>Predicción del peso de peces</h1>
-        <p>Introduce los datos solicitados.</p>
+
+        <p>
+            Introduce la longitud total y la anchura del pez.
+        </p>
 
         <form id="formulario">
-            <label for="length3">Longitud total — Length3:</label>
+
+            <label for="length3">
+                Longitud total — Length3:
+            </label>
+
             <input
                 type="number"
                 id="length3"
                 name="length3"
                 min="0.1"
                 step="0.1"
-                placeholder="Ejemplo: 30.0"
+                placeholder="Ejemplo: 31.0"
                 required
             >
 
-            <label for="width">Anchura — Width:</label>
+            <label for="width">
+                Anchura — Width:
+            </label>
+
             <input
                 type="number"
                 id="width"
@@ -101,51 +132,82 @@
                 required
             >
 
-            <label for="species">Especie:</label>
-            <select id="species" name="species" required>
-                <option value="Bream">Bream</option>
-                <option value="Parkki">Parkki</option>
-                <option value="Perch">Perch</option>
-                <option value="Pike">Pike</option>
-                <option value="Roach">Roach</option>
-                <option value="Smelt">Smelt</option>
-                <option value="Whitefish">Whitefish</option>
-            </select>
+            <button
+                type="submit"
+                id="boton"
+            >
+                Predecir peso
+            </button>
 
-            <button type="submit">Predecir peso</button>
         </form>
 
         <div id="resultado"></div>
+
     </div>
 
     <script>
-        const formulario = document.getElementById("formulario");
-        const resultado = document.getElementById("resultado");
+        const formulario =
+            document.getElementById("formulario");
 
-        formulario.addEventListener("submit", async function (event) {
-            event.preventDefault();
+        const resultado =
+            document.getElementById("resultado");
 
-            resultado.textContent = "Calculando peso...";
+        const boton =
+            document.getElementById("boton");
 
-            try {
-                const respuesta = await fetch("/predict", {
-                    method: "POST",
-                    body: new FormData(formulario)
-                });
+        formulario.addEventListener(
+            "submit",
+            async function (event) {
 
-                const datos = await respuesta.json();
+                event.preventDefault();
 
-                if (datos.error) {
-                    resultado.textContent = "Error: " + datos.error;
-                } else {
-                    resultado.textContent =
-                        "Peso estimado: " + datos.peso + " gramos";
-                }
-            } catch (error) {
+                resultado.classList.remove("error");
                 resultado.textContent =
-                    "Ocurrió un error al realizar la predicción.";
+                    "Calculando peso...";
+
+                boton.disabled = true;
+
+                try {
+                    const respuesta = await fetch(
+                        "/predict",
+                        {
+                            method: "POST",
+                            body: new FormData(formulario)
+                        }
+                    );
+
+                    const datos =
+                        await respuesta.json();
+
+                    if (!respuesta.ok || datos.error) {
+                        resultado.classList.add("error");
+
+                        resultado.textContent =
+                            "Error: "
+                            + (
+                                datos.error
+                                || "No fue posible predecir."
+                            );
+                    } else {
+                        resultado.textContent =
+                            "Peso estimado: "
+                            + datos.peso
+                            + " gramos";
+                    }
+
+                } catch (error) {
+                    resultado.classList.add("error");
+
+                    resultado.textContent =
+                        "Ocurrió un error al realizar "
+                        + "la predicción.";
+
+                } finally {
+                    boton.disabled = false;
+                }
             }
-        });
+        );
     </script>
+
 </body>
 </html>
